@@ -98,3 +98,53 @@ def get_random_question_by_category(category):
 
     finally:
         db.close()
+
+def update_user_stats(
+    telegram_id,
+    is_correct
+):
+    db = SessionLocal()
+
+    try:
+
+        user = (
+            db.query(User)
+            .filter(
+                User.telegram_id == telegram_id
+            )
+            .first()
+        )
+
+        if user:
+
+            user.questions_attempted += 1
+
+            if is_correct:
+                user.correct_answers += 1
+            else:
+                user.wrong_answers += 1
+
+            db.commit()
+
+    finally:
+        db.close()
+
+def get_user_stats(
+    telegram_id
+):
+    db = SessionLocal()
+
+    try:
+
+        user = (
+            db.query(User)
+            .filter(
+                User.telegram_id == telegram_id
+            )
+            .first()
+        )
+
+        return user
+
+    finally:
+        db.close()

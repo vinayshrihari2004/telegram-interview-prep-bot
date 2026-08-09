@@ -15,6 +15,11 @@ from crud import (
     get_random_question_by_category
 )
 
+from crud import (
+    update_user_stats,
+    get_user_stats
+)
+
 
 async def start(
     update: Update,
@@ -63,6 +68,10 @@ async def start(
                 await update.message.reply_text(
                     f"Welcome {name}! 🚀\n\n"
                     f"Current Category: {category}\n\n"
+                    f"📊 Stats\n"
+                    f"Questions Attempted: {existing_user.questions_attempted}\n"
+                    f"✅ Correct: {existing_user.correct_answers}\n"
+                    f"❌ Wrong: {existing_user.wrong_answers}\n\n"
                     f"Use:\n"
                     f"/python - Switch to Python\n"
                     f"/dbms - Switch to DBMS\n\n"
@@ -159,15 +168,31 @@ async def check_answer(
         .lower()
     )
 
+    telegram_id = str(
+        update.effective_user.id
+    )
+
     if is_answer_correct(
         user_answer,
         correct_answer
     ):
+
+        update_user_stats(
+            telegram_id,
+            True
+        )
+
         await update.message.reply_text(
             "✅ Correct!"
         )
 
     else:
+
+        update_user_stats(
+            telegram_id,
+            False
+        )
+
         await update.message.reply_text(
             f"❌ Incorrect\n\n"
             f"✅ Correct Answer:\n{q.answer}"
@@ -177,7 +202,6 @@ async def check_answer(
         "current_question_id",
         None
     )
-
 
 def is_answer_correct(
     user_answer,
@@ -235,4 +259,36 @@ async def dbms_category(
 
     await update.message.reply_text(
         "🗄️ Category set to DBMS"
+    )
+
+async def stats(
+    update,
+    context
+):
+
+    telegram_id = str(
+        update.effective_user.id
+    )
+
+    user = get_user_stats(
+        telegram_id
+    )
+
+    attempted = user.questions_attempted
+    correct = user.correct_answers
+
+    if attempted == 0:
+        accuracy = 0
+    else:
+        accuracy = round(
+            (correct / attempted) * 100,
+            2
+        )
+
+    await update.message.reply_text(
+        f"📊 Your Statistics\n\n"
+        f"Questions Attempted: {attempted}\n"
+        f"Correct Answers: {correct}\n"
+        f"Wrong Answers: {user.wrong_answers}\n"
+        f"Accuracy: {accuracy}%"
     )
