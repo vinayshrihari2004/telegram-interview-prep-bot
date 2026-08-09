@@ -1,6 +1,6 @@
 from telegram.ext import Application, CommandHandler
 from config import BOT_TOKEN
-from handlers import start, question,check_answer
+from handlers import start, question,check_answer,python_category,dbms_category
 from telegram.ext import MessageHandler, filters
 
 app = Application.builder().token(BOT_TOKEN).build()
@@ -14,5 +14,20 @@ app.add_handler(
         check_answer
     )
 )
+
+app.add_handler(
+    CommandHandler(
+        "python",
+        python_category
+    )
+)
+
+app.add_handler(
+    CommandHandler(
+        "dbms",
+        dbms_category
+    )
+)
+
 print("Bot Running...")
 app.run_polling()

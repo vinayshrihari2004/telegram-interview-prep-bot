@@ -13,6 +13,11 @@ class User(Base):
     correct_answers = Column(Integer, default=0)
     wrong_answers = Column(Integer, default=0)
 
+    selected_category = Column(
+    String,
+    nullable=True
+    )
+
 
 class InterviewQuestion(Base):
     __tablename__ = "interview_questions"

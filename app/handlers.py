@@ -9,6 +9,12 @@ from crud import (
     get_question_by_id
 )
 
+from crud import (
+    set_user_category,
+    get_user_category,
+    get_random_question_by_category
+)
+
 
 async def start(
     update: Update,
@@ -30,6 +36,7 @@ async def start(
         )
 
         if not existing_user:
+
             user = User(
                 telegram_id=telegram_id,
                 username=username,
@@ -39,28 +46,80 @@ async def start(
             db.add(user)
             db.commit()
 
-        await update.message.reply_text(
-            f"Welcome {name}! 🚀\n\n"
-            f"Interview Prep Bot is ready."
-        )
+            await update.message.reply_text(
+                f"Welcome {name}! 🚀\n\n"
+                f"No category selected.\n\n"
+                f"Choose a category:\n"
+                f"/python\n"
+                f"/dbms"
+            )
+
+        else:
+
+            category = existing_user.selected_category
+
+            if category:
+
+                await update.message.reply_text(
+                    f"Welcome {name}! 🚀\n\n"
+                    f"Current Category: {category}\n\n"
+                    f"Use:\n"
+                    f"/python - Switch to Python\n"
+                    f"/dbms - Switch to DBMS\n\n"
+                    f"Type /question to start practicing."
+                )
+
+            else:
+
+                await update.message.reply_text(
+                    f"Welcome {name}! 🚀\n\n"
+                    f"No category selected.\n\n"
+                    f"Choose a category:\n"
+                    f"/python\n"
+                    f"/dbms"
+                )
 
     finally:
         db.close()
-
 
 async def question(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
-    q = get_random_question()
 
-    if not q:
+    telegram_id = str(
+        update.effective_user.id
+    )
+
+    category = get_user_category(
+        telegram_id
+    )
+
+    if not category:
+
         await update.message.reply_text(
-            "No questions found."
+            "Choose a category first.\n\n"
+            "/python\n"
+            "/dbms"
         )
+
         return
 
-    context.user_data["current_question_id"] = q.id
+    q = get_random_question_by_category(
+        category
+    )
+
+    if not q:
+
+        await update.message.reply_text(
+            f"No questions found in {category} category."
+        )
+
+        return
+
+    context.user_data[
+        "current_question_id"
+    ] = q.id
 
     await update.message.reply_text(
         f"📚 Category: {q.category}\n\n"
@@ -143,3 +202,37 @@ def is_answer_correct(
     )
 
     return score >= 0.5
+
+async def python_category(
+    update,
+    context
+):
+    telegram_id = str(
+        update.effective_user.id
+    )
+
+    set_user_category(
+        telegram_id,
+        "Python"
+    )
+
+    await update.message.reply_text(
+        "🐍 Category set to Python"
+    )
+
+async def dbms_category(
+    update,
+    context
+):
+    telegram_id = str(
+        update.effective_user.id
+    )
+
+    set_user_category(
+        telegram_id,
+        "DBMS"
+    )
+
+    await update.message.reply_text(
+        "🗄️ Category set to DBMS"
+    )
