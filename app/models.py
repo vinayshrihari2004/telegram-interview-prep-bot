@@ -9,6 +9,9 @@ class User(Base):
     telegram_id = Column(String, unique=True, nullable=False)
     username = Column(String)
     name = Column(String)
+    questions_attempted = Column(Integer, default=0)
+    correct_answers = Column(Integer, default=0)
+    wrong_answers = Column(Integer, default=0)
 
 
 class InterviewQuestion(Base):

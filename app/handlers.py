@@ -3,11 +3,17 @@ from telegram.ext import ContextTypes
 
 from database import SessionLocal
 from models import User
-from crud import get_random_question
 
-async def start(update: Update,
-                context: ContextTypes.DEFAULT_TYPE):
+from crud import (
+    get_random_question,
+    get_question_by_id
+)
 
+
+async def start(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
     db = SessionLocal()
 
     try:
@@ -17,7 +23,9 @@ async def start(update: Update,
 
         existing_user = (
             db.query(User)
-            .filter(User.telegram_id == telegram_id)
+            .filter(
+                User.telegram_id == telegram_id
+            )
             .first()
         )
 
@@ -32,28 +40,18 @@ async def start(update: Update,
             db.commit()
 
         await update.message.reply_text(
-            f"Welcome {name}! 🚀\n\nInterview Prep Bot is ready."
+            f"Welcome {name}! 🚀\n\n"
+            f"Interview Prep Bot is ready."
         )
 
     finally:
         db.close()
 
-async def question(update, context):
 
-    q = get_random_question()
-
-    if not q:
-        await update.message.reply_text(
-            "No questions found in database."
-        )
-        return
-
-    await update.message.reply_text(
-        f"📚 Category: {q.category}\n\n"
-        f"❓ Question:\n{q.question}"
-    )
-
-async def question(update, context):
+async def question(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
     q = get_random_question()
 
     if not q:
@@ -62,24 +60,86 @@ async def question(update, context):
         )
         return
 
-    context.user_data["answer"] = q.answer
+    context.user_data["current_question_id"] = q.id
 
     await update.message.reply_text(
         f"📚 Category: {q.category}\n\n"
         f"❓ Question:\n{q.question}\n\n"
-        f"Type /answer"
+        f"Type your answer below 👇"
     )
 
-async def answer(update, context):
 
-    answer = context.user_data.get("answer")
+async def check_answer(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+    question_id = context.user_data.get(
+        "current_question_id"
+    )
 
-    if not answer:
+    if not question_id:
+        return
+
+    q = get_question_by_id(question_id)
+
+    if not q:
         await update.message.reply_text(
-            "Ask a question first using /question"
+            "Question not found."
         )
         return
 
-    await update.message.reply_text(
-        f"✅ Answer:\n\n{answer}"
+    user_answer = (
+        update.message.text
+        .strip()
+        .lower()
     )
+
+    correct_answer = (
+        q.answer
+        .strip()
+        .lower()
+    )
+
+    if is_answer_correct(
+        user_answer,
+        correct_answer
+    ):
+        await update.message.reply_text(
+            "✅ Correct!"
+        )
+
+    else:
+        await update.message.reply_text(
+            f"❌ Incorrect\n\n"
+            f"✅ Correct Answer:\n{q.answer}"
+        )
+
+    context.user_data.pop(
+        "current_question_id",
+        None
+    )
+
+
+def is_answer_correct(
+    user_answer,
+    correct_answer
+):
+    user_words = set(
+        user_answer.split()
+    )
+
+    correct_words = set(
+        correct_answer.split()
+    )
+
+    common_words = (
+        user_words &
+        correct_words
+    )
+
+    score = (
+        len(common_words)
+        / len(correct_words)
+    )
+
+    return score >= 0.5

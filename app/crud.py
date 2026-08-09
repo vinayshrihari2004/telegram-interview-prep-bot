@@ -16,3 +16,20 @@ def get_random_question():
 
     finally:
         db.close()
+
+
+def get_question_by_id(question_id):
+
+    db = SessionLocal()
+
+    try:
+        return (
+            db.query(InterviewQuestion)
+            .filter(
+                InterviewQuestion.id == question_id
+            )
+            .first()
+        )
+
+    finally:
+        db.close()
